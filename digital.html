@@ -10,7 +10,7 @@
     
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      background: #000000;
       overflow: hidden;
       color: #fff;
     }
@@ -115,6 +115,7 @@
       background: #333;
       outline: none;
       -webkit-appearance: none;
+      appearance: none;
     }
 
     .slider::-webkit-slider-thumb {
@@ -616,8 +617,9 @@
     </div>
   </div>
 
-  <!-- Canvas Container -->
-  <div id="canvas-container">
+  <!-- 3D Model Viewer -->
+  <div id="model-viewer-container">
+    <iframe src="https://tinyglb.com/viewer/cc6b32a8dd7b4d0d97b478a316b55f5d" style="border: 0; height: 600px; width: 100%"></iframe>
     <!-- 3D Data Overlay -->
     <div class="data-overlay" id="dataOverlay">
       <div class="overlay-header">
@@ -634,95 +636,29 @@
     </div>
   </div>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
-      }
-    }
-  </script>
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-    // Global variables
-    let scene, camera, renderer, controls, mixer, clock;
-    let loadedModel, raycaster, mouse;
-    let directionalLight, ambientLight, fog;
-    let equipmentObjects = [];
+  <script>
+    // Global variables for UI functionality
     let selectedEquipment = null;
-    let animationSpeed = 1;
-    let isWireframe = false;
     let currentEnvironment = 'day';
     let dataOverlay = null;
     let hoveredEquipment = null;
     let equipmentData = new Map();
-    let highlightedMesh = null;
+    let equipmentObjects = [];
 
     // Initialize the application
     init();
 
     function init() {
-      // Scene setup
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87ceeb); // Sky blue
-      
-      // Camera setup with better initial position
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(15, 15, 15); // Better initial position
-      
-      // Renderer setup
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
-      
-      // Enhanced settings for better color/texture rendering
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.physicallyCorrectLights = true;
-      renderer.gammaFactor = 2.2;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      
-      const canvasContainer = document.getElementById('canvas-container');
-      canvasContainer.appendChild(renderer.domElement);
-
-      // Lighting setup
-      setupLighting();
-      
-      // Controls setup
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.maxPolarAngle = Math.PI / 2;
-      controls.minDistance = 5;
-      controls.maxDistance = 50;
-
-      // Raycaster for object selection
-      raycaster = new THREE.Raycaster();
-      mouse = new THREE.Vector2();
-
-      // Clock for animations
-      clock = new THREE.Clock();
-
-      // Load the 3D model
-      loadModel();
-      
-      // Set initial camera position after a short delay to ensure model is loaded
+      // Hide loading screen immediately since we're using iframe
       setTimeout(() => {
-        if (loadedModel) {
-          setCameraPreset('overview');
-        }
-      }, 500);
+        document.getElementById('loadingScreen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loadingScreen').style.display = 'none';
+        }, 500);
+      }, 1000);
       
       // Setup UI event listeners
       setupEventListeners();
-      
-      // Start animation loop
-      animate();
       
       // Initialize real-time data simulation
       startDataSimulation();
@@ -730,260 +666,9 @@
       // Update time display
       updateTime();
       setInterval(updateTime, 1000);
-    }
-
-    function setupLighting() {
-      // Directional light (sun) - brighter for better color visibility
-      directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-      directionalLight.position.set(20, 20, 20);
-      directionalLight.castShadow = true;
-      directionalLight.shadow.mapSize.width = 2048;
-      directionalLight.shadow.mapSize.height = 2048;
-      directionalLight.shadow.camera.near = 0.5;
-      directionalLight.shadow.camera.far = 100;
-      directionalLight.shadow.camera.left = -20;
-      directionalLight.shadow.camera.right = 20;
-      directionalLight.shadow.camera.top = 20;
-      directionalLight.shadow.camera.bottom = -20;
-      scene.add(directionalLight);
-
-      // Brighter ambient light to show colors better
-      ambientLight = new THREE.AmbientLight(0x404040, 0.8);
-      scene.add(ambientLight);
-
-      // Additional fill lights to ensure colors are visible
-      const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.3);
-      fillLight1.position.set(-20, 10, -20);
-      scene.add(fillLight1);
       
-      const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-      fillLight2.position.set(20, 10, -20);
-      scene.add(fillLight2);
-
-      // Hemisphere light for natural lighting
-      const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x362d1d, 0.5);
-      scene.add(hemisphereLight);
-    }
-
-    function loadModel() {
-      const loader = new GLTFLoader();
-      const loadingBar = document.getElementById('loadingBar');
-      
-      // Simulate loading progress
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress > 90) progress = 90;
-        loadingBar.style.width = progress + '%';
-      }, 100);
-
-      // Add timeout fallback in case model doesn't load
-      const loadTimeout = setTimeout(() => {
-        console.warn('Model loading timeout - continuing without 3D model');
-        clearInterval(progressInterval);
-        loadingBar.style.width = '100%';
-        setTimeout(() => {
-          document.getElementById('loadingScreen').style.opacity = '0';
-          setTimeout(() => {
-            document.getElementById('loadingScreen').style.display = 'none';
-          }, 500);
-        }, 500);
-        populateEquipmentList();
-      }, 10000); // 10 second timeout
-
-      loader.load('substation_bimfra/scene.gltf', 
-        (gltf) => {
-          clearTimeout(loadTimeout);
-          loadedModel = gltf.scene;
-          
-          // Center the model
-          const box = new THREE.Box3().setFromObject(loadedModel);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          
-          // Reposition model to center of scene
-          loadedModel.position.x = -center.x;
-          loadedModel.position.y = -center.y;
-          loadedModel.position.z = -center.z;
-          
-          // Add the model to the scene
-          scene.add(loadedModel);
-          
-          // Enable shadows and fix materials for all meshes
-          loadedModel.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-              
-              console.log('Processing mesh:', child.name, 'Material:', child.material);
-              
-              // AGGRESSIVE FIX: Replace all materials with colored ones
-              const objectColor = getDefaultColorForObject(child.name);
-              
-              // Create a new material with proper color
-              child.material = new THREE.MeshStandardMaterial({
-                color: objectColor,
-                metalness: 0.2,
-                roughness: 0.8,
-                side: THREE.DoubleSide // Ensure both sides are visible
-              });
-              
-              console.log('Applied color', objectColor.toString(16), 'to', child.name);
-              
-              // Store equipment objects for interaction
-              if (child.name.includes('transformer') || 
-                  child.name.includes('switch') || 
-                  child.name.includes('breaker') ||
-                  child.name.includes('busbar')) {
-                equipmentObjects.push({
-                  object: child,
-                  name: child.name,
-                  type: getEquipmentType(child.name),
-                  status: 'operational'
-                });
-              }
-            }
-          });
-
-          scene.add(loadedModel);
-          
-          // Setup animations if available
-          if (gltf.animations && gltf.animations.length > 0) {
-            mixer = new THREE.AnimationMixer(loadedModel);
-            gltf.animations.forEach((clip) => {
-              const action = mixer.clipAction(clip);
-              action.play();
-            });
-          }
-
-          // Set initial camera position to show the whole model
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const fov = camera.fov * (Math.PI / 180);
-          let cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
-          cameraZ *= 1.5; // Add some padding
-          
-          camera.position.set(cameraZ, cameraZ * 0.5, cameraZ);
-          controls.target.set(0, size.y * 0.5, 0); // Look at center of model
-          controls.update();
-
-          // Complete loading
-          clearInterval(progressInterval);
-          loadingBar.style.width = '100%';
-          setTimeout(() => {
-            document.getElementById('loadingScreen').style.opacity = '0';
-            setTimeout(() => {
-              document.getElementById('loadingScreen').style.display = 'none';
-            }, 500);
-          }, 500);
-
-          // Populate equipment list
-          populateEquipmentList();
-        },
-        (progress) => {
-          // Real loading progress
-          const percentComplete = (progress.loaded / progress.total) * 100;
-          loadingBar.style.width = Math.min(percentComplete, 90) + '%';
-        },
-        (error) => {
-          console.error('Error loading model:', error);
-          document.querySelector('.loading-text').textContent = 'Error loading model. Please check the file path.';
-        }
-      );
-    }
-
-    function fixMaterial(material) {
-      console.log('Fixing material:', material.name, material.type, material);
-      
-      // Force material update
-      material.needsUpdate = true;
-      
-      // Handle different material types with more aggressive fixes
-      if (material.isMeshStandardMaterial || material.isMeshPhysicalMaterial) {
-        // Set more visible default properties
-        material.metalness = material.metalness !== undefined ? material.metalness : 0.0;
-        material.roughness = material.roughness !== undefined ? material.roughness : 0.8;
-        
-        // Force a visible color if none exists
-        if (!material.color || (material.color.r === 0 && material.color.g === 0 && material.color.b === 0)) {
-          material.color = new THREE.Color(0x888888); // Gray fallback
-        }
-        
-        // If color is pure white and no texture, make it more visible
-        if (material.color.r === 1 && material.color.g === 1 && material.color.b === 1 && !material.map) {
-          material.color.setHex(0xaaaaaa);
-        }
-        
-      } else if (material.isMeshLambertMaterial || material.isMeshPhongMaterial) {
-        // For older materials, ensure they have color
-        if (!material.color || (material.color.r === 0 && material.color.g === 0 && material.color.b === 0)) {
-          material.color = new THREE.Color(0x666666);
-        }
-      } else if (material.isMeshBasicMaterial) {
-        // Basic materials don't need lighting but should have color
-        if (!material.color || (material.color.r === 0 && material.color.g === 0 && material.color.b === 0)) {
-          material.color = new THREE.Color(0x777777);
-        }
-      }
-      
-      // Handle textures
-      if (material.map) {
-        material.map.needsUpdate = true;
-        material.map.flipY = false;
-        console.log('Material has texture:', material.map);
-      } else {
-        console.log('Material has no texture, using color:', material.color);
-      }
-      
-      // Fix transparency issues
-      if (material.transparent) {
-        if (material.opacity < 0.1) {
-          material.opacity = 0.9;
-        }
-      } else if (material.opacity !== undefined && material.opacity < 0.9) {
-        material.transparent = true;
-        material.opacity = Math.max(material.opacity, 0.8);
-      }
-      
-      // Add some default colors based on material name for electrical equipment
-      if (material.name) {
-        const name = material.name.toLowerCase();
-        if (name.includes('metal') || name.includes('steel') || name.includes('iron')) {
-          material.color.setHex(0x888888);
-          material.metalness = 0.8;
-          material.roughness = 0.2;
-        } else if (name.includes('copper') || name.includes('wire')) {
-          material.color.setHex(0xb87333);
-          material.metalness = 0.9;
-          material.roughness = 0.1;
-        } else if (name.includes('insulator') || name.includes('ceramic')) {
-          material.color.setHex(0xf0f0f0);
-          material.metalness = 0.0;
-          material.roughness = 0.9;
-        } else if (name.includes('concrete') || name.includes('ground')) {
-          material.color.setHex(0x666666);
-          material.metalness = 0.0;
-          material.roughness = 1.0;
-        }
-      }
-    }
-
-    function getDefaultColorForObject(name) {
-      if (!name) return 0x888888;
-      
-      const lowerName = name.toLowerCase();
-      
-      // Assign colors based on object names
-      if (lowerName.includes('transformer')) return 0x4a90e2; // Blue
-      if (lowerName.includes('switch') || lowerName.includes('breaker')) return 0x7ed321; // Green
-      if (lowerName.includes('busbar') || lowerName.includes('bus')) return 0xf5a623; // Orange
-      if (lowerName.includes('insulator')) return 0xf0f0f0; // White
-      if (lowerName.includes('wire') || lowerName.includes('cable')) return 0xb87333; // Copper
-      if (lowerName.includes('metal') || lowerName.includes('steel')) return 0x888888; // Gray
-      if (lowerName.includes('concrete') || lowerName.includes('ground')) return 0x666666; // Dark gray
-      if (lowerName.includes('support') || lowerName.includes('pole')) return 0x8b4513; // Brown
-      
-      // Default colors for common electrical equipment
-      return 0xaaaaaa; // Light gray default
+      // Populate equipment list with mock data
+      populateEquipmentList();
     }
 
     function getEquipmentType(name) {
@@ -1079,82 +764,15 @@
     }
 
     function focusOnObject(object) {
-      console.log('Focusing on object:', object.name);
-      
-      // Get object world position
-      const box = new THREE.Box3().setFromObject(object);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      
-      console.log('Object center:', center);
-      console.log('Object size:', size);
-      
-      // If object has no size or is at origin, try to get position from object directly
-      if (size.length() < 0.1 || (center.x === 0 && center.y === 0 && center.z === 0)) {
-        console.log('Object has no size or is at origin, using object position');
-        object.getWorldPosition(center);
-        console.log('World position:', center);
-      }
-      
-      // Calculate appropriate distance based on object size
-      const maxDimension = Math.max(size.x, size.y, size.z);
-      let distance = Math.max(maxDimension * 4, 15); // Minimum distance of 15 units
-      
-      // If object is very small or has no size, use a reasonable default distance
-      if (maxDimension < 1) {
-        distance = 20;
-      }
-      
-      // Calculate camera position - position camera at an angle for better view
-      const targetPosition = new THREE.Vector3(
-        center.x + distance * 0.8,  // Offset to the right
-        center.y + distance * 0.6,  // Offset upward  
-        center.z + distance * 0.8   // Offset forward
-      );
-      
-      // Ensure camera doesn't go too close to the ground
-      targetPosition.y = Math.max(targetPosition.y, 5);
-      
-      console.log('Target camera position:', targetPosition);
-      console.log('Look at target:', center);
-      
-      // Animate camera movement
-      animateCamera(targetPosition, center);
-    }
-
-    function animateCamera(targetPosition, lookAtTarget) {
-      const startPosition = camera.position.clone();
-      const startTarget = controls.target.clone();
-      
-      let progress = 0;
-      const duration = 2000; // 2 seconds
-      const startTime = Date.now();
-      
-      function updateCamera() {
-        const elapsed = Date.now() - startTime;
-        progress = Math.min(elapsed / duration, 1);
-        
-        // Smooth easing
-        const eased = 1 - Math.pow(1 - progress, 3);
-        
-        camera.position.lerpVectors(startPosition, targetPosition, eased);
-        controls.target.lerpVectors(startTarget, lookAtTarget, eased);
-        controls.update();
-        
-        if (progress < 1) {
-          requestAnimationFrame(updateCamera);
-        }
-      }
-      
-      updateCamera();
+      // Object focusing is handled by the iframe viewer
+      console.log('Focus on object:', object.name, '- handled by iframe viewer');
     }
 
     function setupEventListeners() {
-      // Lighting intensity control
+      // Lighting intensity control (handled by iframe viewer)
       document.getElementById('lightIntensity').addEventListener('input', (e) => {
         const intensity = parseFloat(e.target.value);
-        directionalLight.intensity = intensity;
-        ambientLight.intensity = intensity * 0.4;
+        console.log('Lighting intensity:', intensity, '- handled by iframe viewer');
       });
 
       // Environment controls
@@ -1195,11 +813,7 @@
         document.getElementById('voltage').textContent = adjustedVoltage.toFixed(1);
       });
 
-      // Mouse interaction for object selection and hover
-      renderer.domElement.addEventListener('click', onMouseClick);
-      renderer.domElement.addEventListener('mousemove', onMouseMove);
-      renderer.domElement.addEventListener('mouseleave', onMouseLeave);
-      
+      // Mouse interaction is handled by the iframe viewer
       // Window resize
       window.addEventListener('resize', onWindowResize);
       
@@ -1216,248 +830,53 @@
       });
       document.getElementById(mode + 'Mode').classList.add('active');
 
-      switch (mode) {
-        case 'day':
-          scene.background = new THREE.Color(0x87ceeb);
-          directionalLight.color.setHex(0xffffff);
-          directionalLight.intensity = 1;
-          ambientLight.intensity = 0.4;
-          if (fog) scene.remove(fog);
-          break;
-          
-        case 'night':
-          scene.background = new THREE.Color(0x191970);
-          directionalLight.color.setHex(0x4169e1);
-          directionalLight.intensity = 0.3;
-          ambientLight.intensity = 0.1;
-          if (fog) scene.remove(fog);
-          break;
-          
-        case 'storm':
-          scene.background = new THREE.Color(0x2f4f4f);
-          directionalLight.color.setHex(0x708090);
-          directionalLight.intensity = 0.5;
-          ambientLight.intensity = 0.2;
-          
-          // Add fog effect
-          fog = new THREE.Fog(0x2f4f4f, 10, 100);
-          scene.fog = fog;
-          
-          // Add lightning effect occasionally
-          setInterval(() => {
-            if (currentEnvironment === 'storm' && Math.random() < 0.1) {
-              directionalLight.intensity = 2;
-              setTimeout(() => {
-                if (currentEnvironment === 'storm') {
-                  directionalLight.intensity = 0.5;
-                }
-              }, 100);
-            }
-          }, 3000);
-          break;
-      }
+      // Environment changes are handled by the iframe viewer
+      console.log('Environment set to:', mode, '- handled by iframe viewer');
     }
 
     function setCameraPreset(preset) {
-      let targetPosition, lookAtTarget;
-      
-      // Get model bounding box if available
-      let modelCenter = new THREE.Vector3();
-      let modelSize = new THREE.Vector3(1, 1, 1);
-      
-      if (loadedModel) {
-        const box = new THREE.Box3().setFromObject(loadedModel);
-        box.getCenter(modelCenter);
-        box.getSize(modelSize);
-      }
-      
-      // Adjust camera positions relative to model
-      switch (preset) {
-        case 'overview':
-          const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-          const distance = maxDim * 1.5;
-          targetPosition = new THREE.Vector3(
-            modelCenter.x + distance,
-            modelCenter.y + distance * 0.7,
-            modelCenter.z + distance
-          );
-          lookAtTarget = modelCenter.clone();
-          break;
-          
-        case 'transformer':
-          targetPosition = new THREE.Vector3(
-            modelCenter.x + 5,
-            modelCenter.y + 3,
-            modelCenter.z + 8
-          );
-          lookAtTarget = new THREE.Vector3(modelCenter.x, modelCenter.y + 2, modelCenter.z);
-          break;
-          
-        case 'switchgear':
-          targetPosition = new THREE.Vector3(
-            modelCenter.x - 5,
-            modelCenter.y + 2,
-            modelCenter.z + 5
-          );
-          lookAtTarget = new THREE.Vector3(modelCenter.x - 2, modelCenter.y, modelCenter.z);
-          break;
-      }
-      
-      animateCamera(targetPosition, lookAtTarget);
+      // Camera presets are handled by the iframe viewer
+      console.log('Camera preset:', preset, '- handled by iframe viewer');
     }
 
     function toggleWireframe() {
       isWireframe = !isWireframe;
       document.getElementById('toggleWireframe').classList.toggle('active');
-      
-      if (loadedModel) {
-        loadedModel.traverse((child) => {
-          if (child.isMesh) {
-            child.material.wireframe = isWireframe;
-          }
-        });
-      }
+      console.log('Wireframe toggle:', isWireframe, '- handled by iframe viewer');
     }
 
     function toggleShadows() {
-      renderer.shadowMap.enabled = !renderer.shadowMap.enabled;
       document.getElementById('toggleShadows').classList.toggle('active');
+      console.log('Shadows toggle - handled by iframe viewer');
     }
 
     function toggleFog() {
-      if (scene.fog) {
-        scene.fog = null;
-        document.getElementById('toggleFog').classList.remove('active');
-      } else {
-        scene.fog = new THREE.Fog(0x87ceeb, 20, 100);
-        document.getElementById('toggleFog').classList.add('active');
-      }
+      document.getElementById('toggleFog').classList.toggle('active');
+      console.log('Fog toggle - handled by iframe viewer');
     }
 
     function forceApplyColors() {
-      console.log('Manually applying colors to all objects...');
-      
-      if (loadedModel) {
-        loadedModel.traverse((child) => {
-          if (child.isMesh) {
-            const objectColor = getDefaultColorForObject(child.name);
-            
-            // Create a bright, visible material
-            child.material = new THREE.MeshStandardMaterial({
-              color: objectColor,
-              metalness: 0.1,
-              roughness: 0.9,
-              side: THREE.DoubleSide
-            });
-            
-            console.log('Force applied color', objectColor.toString(16), 'to', child.name);
-          }
-        });
-        
-        // Also try creating some test colored cubes if model is still white
-        createTestObjects();
-      }
-    }
-
-    function createTestObjects() {
-      // Create some test colored objects to verify colors are working
-      const testGeometry = new THREE.BoxGeometry(2, 2, 2);
-      
-      const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
-      
-      colors.forEach((color, index) => {
-        const testMaterial = new THREE.MeshStandardMaterial({ color: color });
-        const testCube = new THREE.Mesh(testGeometry, testMaterial);
-        testCube.position.set((index - 2.5) * 5, 5, 0);
-        testCube.name = `TestCube_${index}`;
-        scene.add(testCube);
-      });
-      
-      console.log('Added test colored cubes above the model');
+      console.log('Force apply colors - handled by iframe viewer');
     }
 
     function onMouseClick(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      
-      if (loadedModel) {
-        const intersects = raycaster.intersectObjects(loadedModel.children, true);
-        
-        if (intersects.length > 0) {
-          const clickedObject = intersects[0].object;
-          const intersectionPoint = intersects[0].point;
-          
-          // Find equipment data for clicked object
-          let equipment = equipmentObjects.find(eq => eq.object === clickedObject);
-          
-          // If not found in equipment objects, create one based on object name
-          if (!equipment && clickedObject.name) {
-            equipment = createEquipmentFromObject(clickedObject);
-          }
-          
-          if (equipment) {
-            selectEquipment(equipment, false); // false = not from UI
-            showDataOverlay(equipment, event.clientX, event.clientY);
-            highlightEquipment(clickedObject);
-            
-            // Additional focus call with delay to ensure proper positioning
-            setTimeout(() => {
-              if (equipment.object) {
-                focusOnObject(equipment.object);
-              }
-            }, 100);
-          }
-        } else {
-          // Clicked on empty space, hide overlay
-          hideDataOverlay();
-          clearHighlight();
-        }
-      }
+      // Mouse clicks on 3D objects are handled by the iframe viewer
+      console.log('Mouse click - handled by iframe viewer');
     }
 
     function onMouseMove(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      
-      if (loadedModel) {
-        const intersects = raycaster.intersectObjects(loadedModel.children, true);
-        
-        if (intersects.length > 0) {
-          const hoveredObject = intersects[0].object;
-          
-          // Change cursor to pointer when hovering over equipment
-          if (isEquipmentObject(hoveredObject)) {
-            renderer.domElement.style.cursor = 'pointer';
-            
-            // Show quick preview tooltip
-            if (hoveredEquipment !== hoveredObject) {
-              hoveredEquipment = hoveredObject;
-              showQuickPreview(hoveredObject, event.clientX, event.clientY);
-            }
-          } else {
-            renderer.domElement.style.cursor = 'default';
-            hoveredEquipment = null;
-          }
-        } else {
-          renderer.domElement.style.cursor = 'default';
-          hoveredEquipment = null;
-        }
-      }
+      // Mouse movement over 3D objects is handled by the iframe viewer
+      console.log('Mouse move - handled by iframe viewer');
     }
 
     function onMouseLeave() {
-      renderer.domElement.style.cursor = 'default';
-      hoveredEquipment = null;
+      // Mouse leave is handled by the iframe viewer
+      console.log('Mouse leave - handled by iframe viewer');
     }
 
     function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Window resize is handled by the iframe viewer
+      console.log('Window resized - handled by iframe viewer');
     }
 
     function startDataSimulation() {
@@ -1807,51 +1226,17 @@
     }
 
     function highlightEquipment(mesh) {
-      // Clear previous highlight
-      clearHighlight();
-      
-      // Store original material
-      if (mesh.material) {
-        mesh.userData.originalMaterial = mesh.material;
-        
-        // Create highlight material
-        const highlightMaterial = mesh.material.clone();
-        highlightMaterial.emissive = new THREE.Color(0x00ff88);
-        highlightMaterial.emissiveIntensity = 0.3;
-        
-        mesh.material = highlightMaterial;
-        highlightedMesh = mesh;
-      }
+      // Equipment highlighting is handled by the iframe viewer
+      console.log('Highlight equipment - handled by iframe viewer');
     }
 
     function clearHighlight() {
-      if (highlightedMesh && highlightedMesh.userData.originalMaterial) {
-        highlightedMesh.material = highlightedMesh.userData.originalMaterial;
-        highlightedMesh = null;
-      }
+      // Clear highlight is handled by the iframe viewer
+      console.log('Clear highlight - handled by iframe viewer');
     }
 
-    function animate() {
-      requestAnimationFrame(animate);
-      
-      const delta = clock.getDelta();
-      
-      // Update animations
-      if (mixer) {
-        mixer.update(delta * animationSpeed);
-      }
-      
-      // Update equipment data periodically
-      if (Math.random() < 0.01) { // Update roughly every 100 frames
-        updateEquipmentData();
-      }
-      
-      // Update controls
-      controls.update();
-      
-      // Render scene
-      renderer.render(scene, camera);
-    }
+    // Animation loop is handled by the iframe viewer
+    // Data updates are handled by setInterval in startDataSimulation()
 
     // Initialize default environment
     setTimeout(() => {
