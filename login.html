@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Digital Twin Substation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .login-container {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.1);
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .login-header .logo-icon {
+            font-size: 2.2rem;
+            color: #00ff88;
+            margin-bottom: 8px;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+            display: block;
+        }
+
+        .login-header h1 {
+            color: #00ff88;
+            font-size: 1.6rem;
+            margin-bottom: 4px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            font-weight: 600;
+        }
+
+        .login-header p {
+            color: #ccc;
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            color: #fff;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            padding-left: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            color: #333;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+
+        .form-group .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00ff88;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-link a:hover {
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin-right: 10px;
+        }
+
+        .loading-spinner i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: #00ff88;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .remember-me input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: #00ff88;
+        }
+
+        .remember-me label {
+            color: #ccc;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Demo Credentials Styling */
+        .demo-credentials {
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .demo-header {
+            background: rgba(0, 255, 136, 0.15);
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .demo-header i {
+            color: #00ff88;
+            font-size: 0.7rem;
+        }
+
+        .demo-header span {
+            color: #00ff88;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .demo-content {
+            padding: 8px;
+        }
+
+        .credential-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .credential-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .credential-label {
+            color: #ccc;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .credential-value {
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .login-container {
+                max-width: 100%;
+                padding: 30px 25px;
+                max-height: 95vh;
+            }
+            
+            .login-header .logo-icon {
+                font-size: 2rem;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .form-group input {
+                padding: 10px 12px;
+                padding-left: 40px;
+            }
+            
+            .form-group .input-icon {
+                left: 12px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 25px 20px;
+            }
+            
+            .demo-content {
+                padding: 12px;
+            }
+            
+            .credential-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .credential-value {
+                align-self: stretch;
+                text-align: center;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .login-container {
+                max-height: 95vh;
+                padding: 25px 40px;
+            }
+            
+            .login-header {
+                margin-bottom: 20px;
+            }
+            
+            .demo-credentials {
+                margin-bottom: 20px;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-bolt logo-icon"></i>
+            <h1>Digital Twin Login</h1>
+            <p>Access your substation control system</p>
+        </div>
+
+        <!-- Demo Credentials Info -->
+        <div class="demo-credentials">
+            <div class="demo-header">
+                <i class="fas fa-info-circle"></i>
+                <span>Demo Credentials</span>
+            </div>
+            <div class="demo-content">
+                <div class="credential-item">
+                    <span class="credential-label">Substation ID:</span>
+                    <span class="credential-value">SUBSTATION1</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Password:</span>
+                    <span class="credential-value">1234567890</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="substationId">Substation ID</label>
+                <div class="input-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <input type="text" id="substationId" name="substationId" placeholder="Enter your substation ID" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMe" name="rememberMe">
+                <label for="rememberMe">Remember me</label>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span class="loading-spinner" id="loadingSpinner">
+                    <i class="fas fa-spinner"></i>
+                </span>
+                <span id="btnText">Login to Dashboard</span>
+            </button>
+        </form>
+
+        <div class="forgot-password">
+            <a href="#" onclick="showForgotPassword()">Forgot your password?</a>
+        </div>
+
+        <div class="back-link">
+            <a href="index.html">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Login form handling
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const substationId = document.getElementById('substationId').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            
+            // Show loading state
+            showLoading(true);
+            hideMessages();
+            
+            // Simulate API call with hardcoded credentials
+            setTimeout(() => {
+                // Check credentials
+                if (substationId === 'SUBSTATION1' && password === '1234567890') {
+                    showSuccess('Login successful! Redirecting to dashboard...');
+                    
+                    // Store authentication token (simulated)
+                    localStorage.setItem('authToken', 'demo-token-' + Date.now());
+                    localStorage.setItem('substationId', substationId);
+                    
+                    // Redirect to dashboard after short delay
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    showError('Invalid credentials. Please use:\nSubstation ID: SUBSTATION1\nPassword: 1234567890');
+                }
+                
+                showLoading(false);
+            }, 1000); // Simulate network delay
+            
+            // Uncomment below for real API integration
+            /*
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        substationId,
+                        password,
+                        rememberMe
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('Login successful! Redirecting to dashboard...');
+                    
+                    // Store authentication token
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('substationId', substationId);
+                    
+                    // Redirect to dashboard after short delay
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    showError(data.message || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Connection error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+            */
+        });
+        
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            const btnText = document.getElementById('btnText');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (show) {
+                spinner.style.display = 'inline-block';
+                btnText.textContent = 'Logging in...';
+                loginBtn.disabled = true;
+            } else {
+                spinner.style.display = 'none';
+                btnText.textContent = 'Login to Dashboard';
+                loginBtn.disabled = false;
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function showForgotPassword() {
+            alert('Please contact your system administrator to reset your password.\n\nEmail: admin@digitaltwins.com\nPhone: +1-800-SUBSTATION');
+        }
+        
+        // Check if user is already logged in
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                // Verify token with server
+                fetch('/api/auth/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}` 
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('substationId');
+                    }
+                })
+                .catch(error => {
+                    console.error('Token verification failed:', error);
+                });
+            }
+        });
+        
+        // Auto-focus on first input
+        document.getElementById('substationId').focus();
+        
+        // Enter key handling
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

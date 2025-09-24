@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>220kV Digital Twin Substation - Advanced Monitoring & Control System</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #000000;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    canvas { display: block; }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 1000;
+      border-bottom: 2px solid #00ff88;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #00ff88;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* Control Panel */
+    .control-panel {
+      position: fixed;
+      left: 20px;
+      top: 80px;
+      width: 300px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .panel-section {
+      margin-bottom: 25px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #00ff88;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #00ff88;
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      -moz-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #00ff88;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn {
+      background: linear-gradient(45deg, #00ff88, #00cc6a);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn.active {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    }
+
+    /* Data Panel */
+    .data-panel {
+      position: fixed;
+      right: 20px;
+      top: 80px;
+      width: 320px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .data-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #00ff88;
+      margin-bottom: 5px;
+    }
+
+    .data-label {
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .data-unit {
+      font-size: 14px;
+      color: #999;
+    }
+
+    /* Equipment List */
+    .equipment-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .equipment-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .equipment-item:hover {
+      background: rgba(0, 255, 136, 0.1);
+      border-color: #00ff88;
+    }
+
+    .equipment-item.selected {
+      background: rgba(0, 255, 136, 0.2);
+      border-color: #00ff88;
+    }
+
+    .equipment-name {
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .equipment-status {
+      font-size: 11px;
+      color: #00ff88;
+    }
+
+    /* Loading Screen */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #00ff88;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .loading-progress {
+      width: 300px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .loading-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #00cc6a);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* 3D Data Overlay Styles */
+    .data-overlay {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(10px);
+      border: 2px solid #00ff88;
+      border-radius: 12px;
+      padding: 15px;
+      color: white;
+      font-size: 12px;
+      z-index: 1500;
+      min-width: 250px;
+      box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+      transform: translate(-50%, -100%);
+      margin-top: -10px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .data-overlay.visible {
+      opacity: 1;
+      transform: translate(-50%, -100%) scale(1);
+    }
+
+    .data-overlay::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-top-color: #00ff88;
+    }
+
+    .overlay-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+    }
+
+    .overlay-icon {
+      color: #00ff88;
+      font-size: 16px;
+    }
+
+    .overlay-title {
+      color: #00ff88;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .overlay-data {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .overlay-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+    }
+
+    .overlay-label {
+      color: #ccc;
+      font-size: 11px;
+    }
+
+    .overlay-value {
+      color: #fff;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .overlay-value.warning {
+      color: #ff6b6b;
+    }
+
+    .overlay-value.good {
+      color: #00ff88;
+    }
+
+    .overlay-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff88;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.warning {
+      background: #ff6b6b;
+    }
+
+    /* Equipment Highlighting */
+    .equipment-highlight {
+      animation: equipmentGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes equipmentGlow {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .control-panel, .data-panel {
+        width: calc(100% - 40px);
+        position: relative;
+        margin: 20px;
+      }
+      
+      .header {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+      }
+
+      .data-overlay {
+        min-width: 200px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading Digital Twin Substation...</div>
+    <div class="loading-progress">
+      <div class="loading-bar" id="loadingBar"></div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <i class="fas fa-bolt"></i>
+      220kV Digital Twin Substation
+    </div>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span>System Online</span>
+      <span id="currentTime"></span>
+    </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-cogs"></i> Scene Controls</div>
+      
+      <div class="control-group">
+        <label class="control-label">Lighting Intensity</label>
+        <input type="range" class="slider" id="lightIntensity" min="0" max="2" step="0.1" value="1">
+      </div>
+      
+      <div class="control-group">
+        <label class="control-label">Environment</label>
+        <button class="btn" id="dayMode">Day</button>
+        <button class="btn" id="nightMode">Night</button>
+        <button class="btn" id="stormMode">Storm</button>
+      </div>
+      
+      <div class="control-group">
+        <label class="control-label">Camera Presets</label>
+        <button class="btn" id="overviewCam">Overview</button>
+        <button class="btn" id="transformerCam">Transformer</button>
+        <button class="btn" id="switchgearCam">Switchgear</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-eye"></i> Visualization</div>
+      
+      <div class="control-group">
+        <button class="btn" id="toggleWireframe">Wireframe</button>
+        <button class="btn" id="toggleShadows">Shadows</button>
+        <button class="btn" id="toggleFog">Fog Effect</button>
+        <button class="btn" id="forceColors">Fix Colors</button>
+      </div>
+      
+      <div class="control-group">
+        <label class="control-label">Animation Speed</label>
+        <input type="range" class="slider" id="animSpeed" min="0" max="2" step="0.1" value="1">
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-bolt"></i> 220kV Operations</div>
+      
+      <div class="control-group">
+        <button class="btn" id="loadFlow">Load Flow Analysis</button>
+        <button class="btn" id="faultAnalysis">Fault Analysis</button>
+      </div>
+      
+      <div class="control-group">
+        <button class="btn" id="protectionTest">Protection Test</button>
+        <button class="btn" id="maintenanceMode">Maintenance Mode</button>
+      </div>
+      
+      <div class="control-group">
+        <label class="control-label">Tap Position</label>
+        <input type="range" class="slider" id="tapPosition" min="1" max="21" step="1" value="11">
+        <span id="tapValue" style="color: #00ff88; font-size: 12px;">11/21</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-tools"></i> Equipment</div>
+      <div class="equipment-list" id="equipmentList">
+        <!-- Equipment items will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Panel -->
+  <div class="data-panel">
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-chart-line"></i> Real-time Data</div>
+      
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="data-value" id="voltage">220.0</div>
+          <div class="data-label">Line Voltage</div>
+          <div class="data-unit">kV</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="current">1250.5</div>
+          <div class="data-label">Line Current</div>
+          <div class="data-unit">A</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="power">475.2</div>
+          <div class="data-label">Active Power</div>
+          <div class="data-unit">MW</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="frequency">50.0</div>
+          <div class="data-label">Frequency</div>
+          <div class="data-unit">Hz</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="temperature">65</div>
+          <div class="data-label">Temperature</div>
+          <div class="data-unit">°C</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="efficiency">99.1</div>
+          <div class="data-label">Transformer Efficiency</div>
+          <div class="data-unit">%</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="reactive_power">125.8</div>
+          <div class="data-label">Reactive Power</div>
+          <div class="data-unit">MVAr</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="power_factor">0.97</div>
+          <div class="data-label">Power Factor</div>
+          <div class="data-unit">lag</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="load_percentage">78.5</div>
+          <div class="data-label">Load</div>
+          <div class="data-unit">%</div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-value" id="oil_temperature">85</div>
+          <div class="data-label">Oil Temp</div>
+          <div class="data-unit">°C</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-exclamation-triangle"></i> Alerts</div>
+      <div id="alertsList">
+        <div style="color: #00ff88; font-size: 12px; padding: 10px; text-align: center;">
+          All systems operating normally
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title"><i class="fas fa-info-circle"></i> Selected Equipment</div>
+      <div id="equipmentDetails">
+        <div style="color: #ccc; font-size: 12px; padding: 10px; text-align: center;">
+          Click on equipment to view details
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3D Model Viewer -->
+  <div id="model-viewer-container">
+    <iframe src="https://tinyglb.com/viewer/cc6b32a8dd7b4d0d97b478a316b55f5d" style="border: 0; height: 600px; width: 100%"></iframe>
+    <!-- 3D Data Overlay -->
+    <div class="data-overlay" id="dataOverlay">
+      <div class="overlay-header">
+        <i class="overlay-icon fas fa-bolt"></i>
+        <span class="overlay-title" id="overlayTitle">Equipment Data</span>
+      </div>
+      <div class="overlay-data" id="overlayData">
+        <!-- Data will be populated dynamically -->
+      </div>
+      <div class="overlay-status">
+        <div class="status-dot" id="overlayStatusDot"></div>
+        <span id="overlayStatus">Operational</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables for UI functionality
+    let selectedEquipment = null;
+    let currentEnvironment = 'day';
+    let dataOverlay = null;
+    let hoveredEquipment = null;
+    let equipmentData = new Map();
+    let equipmentObjects = [];
+
+    // Initialize the application
+    init();
+
+    function init() {
+      // Hide loading screen immediately since we're using iframe
+      setTimeout(() => {
+        document.getElementById('loadingScreen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loadingScreen').style.display = 'none';
+        }, 500);
+      }, 1000);
+      
+      // Setup UI event listeners
+      setupEventListeners();
+      
+      // Initialize real-time data simulation
+      startDataSimulation();
+      
+      // Update time display
+      updateTime();
+      setInterval(updateTime, 1000);
+      
+      // Populate equipment list with mock data
+      populateEquipmentList();
+    }
+
+    function getEquipmentType(name) {
+      if (name.includes('transformer')) return 'Power Transformer';
+      if (name.includes('switch')) return 'Switch';
+      if (name.includes('breaker')) return 'Circuit Breaker';
+      if (name.includes('busbar')) return 'Busbar';
+      return 'Equipment';
+    }
+
+    function populateEquipmentList() {
+      const equipmentList = document.getElementById('equipmentList');
+      equipmentList.innerHTML = '';
+
+      // Add some default equipment if none found in model
+      if (equipmentObjects.length === 0) {
+        const defaultEquipment = [
+          { name: '220kV Main Transformer T1', type: '220kV Power Transformer', status: 'operational', rating: '300 MVA' },
+          { name: '220kV Circuit Breaker CB1', type: 'SF6 Circuit Breaker', status: 'operational', rating: '3150A' },
+          { name: '220kV Disconnect Switch DS1', type: 'Disconnect Switch', status: 'operational', rating: '3150A' },
+          { name: '220kV Busbar Section A', type: 'Main Busbar', status: 'operational', rating: '4000A' },
+          { name: '220kV Lightning Arrester LA1', type: 'Surge Arrester', status: 'operational', rating: '192kV' },
+          { name: '220kV Current Transformer CT1', type: 'Current Transformer', status: 'operational', rating: '2000/5A' },
+          { name: '220kV Voltage Transformer VT1', type: 'Voltage Transformer', status: 'operational', rating: '220kV/110V' },
+          { name: 'Control & Protection Panel', type: 'Control System', status: 'operational', rating: 'IEC 61850' }
+        ];
+        
+        defaultEquipment.forEach(equipment => {
+          const item = document.createElement('div');
+          item.className = 'equipment-item';
+          item.innerHTML = `
+            <div class="equipment-name">${equipment.name}</div>
+            <div class="equipment-status">Status: ${equipment.status}</div>
+          `;
+          item.addEventListener('click', () => selectEquipment(equipment, true));
+          equipmentList.appendChild(item);
+        });
+      } else {
+        equipmentObjects.forEach(equipment => {
+          const item = document.createElement('div');
+          item.className = 'equipment-item';
+          item.innerHTML = `
+            <div class="equipment-name">${equipment.type}</div>
+            <div class="equipment-status">Status: ${equipment.status}</div>
+          `;
+          item.addEventListener('click', () => selectEquipment(equipment, true));
+          equipmentList.appendChild(item);
+        });
+      }
+    }
+
+    function selectEquipment(equipment, fromUI = false) {
+      selectedEquipment = equipment;
+      
+      // Update UI only if selection came from equipment list
+      if (fromUI) {
+        document.querySelectorAll('.equipment-item').forEach(item => {
+          item.classList.remove('selected');
+        });
+        if (event && event.target) {
+          event.target.closest('.equipment-item').classList.add('selected');
+        }
+      }
+      
+      // Show equipment details
+      showEquipmentDetails(equipment);
+      
+      // Focus camera on equipment if it has an object
+      if (equipment.object) {
+        focusOnObject(equipment.object);
+      }
+    }
+
+    function showEquipmentDetails(equipment) {
+      const detailsPanel = document.getElementById('equipmentDetails');
+      const voltage = equipment.name.includes('220kV') ? (220 + Math.random() * 4 - 2).toFixed(1) : (Math.random() * 50 + 100).toFixed(1);
+      const current = equipment.name.includes('220kV') ? (1250 + Math.random() * 200 - 100).toFixed(1) : (Math.random() * 100 + 200).toFixed(1);
+      
+      detailsPanel.innerHTML = `
+        <div style="padding: 10px;">
+          <h4 style="color: #00ff88; margin-bottom: 10px;">${equipment.name || equipment.type}</h4>
+          <p><strong>Type:</strong> ${equipment.type}</p>
+          <p><strong>Rating:</strong> ${equipment.rating || 'N/A'}</p>
+          <p><strong>Status:</strong> <span style="color: ${equipment.status === 'operational' ? '#00ff88' : '#ff6b6b'}">${equipment.status}</span></p>
+          <p><strong>Voltage:</strong> ${voltage} kV</p>
+          <p><strong>Current:</strong> ${current} A</p>
+          <p><strong>Temperature:</strong> ${(Math.random() * 20 + 65).toFixed(1)}°C</p>
+          <p><strong>Load:</strong> ${(Math.random() * 30 + 70).toFixed(1)}%</p>
+          <p><strong>Last Maintenance:</strong> ${new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+          <p><strong>Next Maintenance:</strong> ${new Date(Date.now() + Math.random() * 60 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+        </div>
+      `;
+    }
+
+    function focusOnObject(object) {
+      // Object focusing is handled by the iframe viewer
+      console.log('Focus on object:', object.name, '- handled by iframe viewer');
+    }
+
+    function setupEventListeners() {
+      // Lighting intensity control (handled by iframe viewer)
+      document.getElementById('lightIntensity').addEventListener('input', (e) => {
+        const intensity = parseFloat(e.target.value);
+        console.log('Lighting intensity:', intensity, '- handled by iframe viewer');
+      });
+
+      // Environment controls
+      document.getElementById('dayMode').addEventListener('click', () => setEnvironment('day'));
+      document.getElementById('nightMode').addEventListener('click', () => setEnvironment('night'));
+      document.getElementById('stormMode').addEventListener('click', () => setEnvironment('storm'));
+
+      // Camera presets
+      document.getElementById('overviewCam').addEventListener('click', () => setCameraPreset('overview'));
+      document.getElementById('transformerCam').addEventListener('click', () => setCameraPreset('transformer'));
+      document.getElementById('switchgearCam').addEventListener('click', () => setCameraPreset('switchgear'));
+
+      // Visualization toggles
+      document.getElementById('toggleWireframe').addEventListener('click', toggleWireframe);
+      document.getElementById('toggleShadows').addEventListener('click', toggleShadows);
+      document.getElementById('toggleFog').addEventListener('click', toggleFog);
+      document.getElementById('forceColors').addEventListener('click', forceApplyColors);
+
+      // Animation speed
+      document.getElementById('animSpeed').addEventListener('input', (e) => {
+        animationSpeed = parseFloat(e.target.value);
+      });
+
+      // 220kV Operations controls
+      document.getElementById('loadFlow').addEventListener('click', performLoadFlowAnalysis);
+      document.getElementById('faultAnalysis').addEventListener('click', performFaultAnalysis);
+      document.getElementById('protectionTest').addEventListener('click', performProtectionTest);
+      document.getElementById('maintenanceMode').addEventListener('click', toggleMaintenanceMode);
+      
+      // Tap position control
+      document.getElementById('tapPosition').addEventListener('input', (e) => {
+        const tapValue = e.target.value;
+        document.getElementById('tapValue').textContent = `${tapValue}/21`;
+        // Simulate voltage adjustment based on tap position
+        const baseVoltage = 220;
+        const voltageAdjustment = (tapValue - 11) * 1.25; // ±1.25% per tap
+        const adjustedVoltage = baseVoltage + voltageAdjustment;
+        document.getElementById('voltage').textContent = adjustedVoltage.toFixed(1);
+      });
+
+      // Mouse interaction is handled by the iframe viewer
+      // Window resize
+      window.addEventListener('resize', onWindowResize);
+      
+      // Initialize data overlay
+      dataOverlay = document.getElementById('dataOverlay');
+    }
+
+    function setEnvironment(mode) {
+      currentEnvironment = mode;
+      
+      // Update button states
+      document.querySelectorAll('#dayMode, #nightMode, #stormMode').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(mode + 'Mode').classList.add('active');
+
+      // Environment changes are handled by the iframe viewer
+      console.log('Environment set to:', mode, '- handled by iframe viewer');
+    }
+
+    function setCameraPreset(preset) {
+      // Camera presets are handled by the iframe viewer
+      console.log('Camera preset:', preset, '- handled by iframe viewer');
+    }
+
+    function toggleWireframe() {
+      isWireframe = !isWireframe;
+      document.getElementById('toggleWireframe').classList.toggle('active');
+      console.log('Wireframe toggle:', isWireframe, '- handled by iframe viewer');
+    }
+
+    function toggleShadows() {
+      document.getElementById('toggleShadows').classList.toggle('active');
+      console.log('Shadows toggle - handled by iframe viewer');
+    }
+
+    function toggleFog() {
+      document.getElementById('toggleFog').classList.toggle('active');
+      console.log('Fog toggle - handled by iframe viewer');
+    }
+
+    function forceApplyColors() {
+      console.log('Force apply colors - handled by iframe viewer');
+    }
+
+    function onMouseClick(event) {
+      // Mouse clicks on 3D objects are handled by the iframe viewer
+      console.log('Mouse click - handled by iframe viewer');
+    }
+
+    function onMouseMove(event) {
+      // Mouse movement over 3D objects is handled by the iframe viewer
+      console.log('Mouse move - handled by iframe viewer');
+    }
+
+    function onMouseLeave() {
+      // Mouse leave is handled by the iframe viewer
+      console.log('Mouse leave - handled by iframe viewer');
+    }
+
+    function onWindowResize() {
+      // Window resize is handled by the iframe viewer
+      console.log('Window resized - handled by iframe viewer');
+    }
+
+    function startDataSimulation() {
+      setInterval(() => {
+        // Simulate real-time data updates for 220kV system
+        document.getElementById('voltage').textContent = (220 + Math.random() * 4 - 2).toFixed(1);
+        document.getElementById('current').textContent = (1250 + Math.random() * 100 - 50).toFixed(1);
+        document.getElementById('power').textContent = (475 + Math.random() * 20 - 10).toFixed(1);
+        document.getElementById('frequency').textContent = (50.0 + Math.random() * 0.1 - 0.05).toFixed(2);
+        document.getElementById('temperature').textContent = (65 + Math.random() * 4 - 2).toFixed(0);
+        document.getElementById('efficiency').textContent = (99.1 + Math.random() * 0.4 - 0.2).toFixed(1);
+        document.getElementById('reactive_power').textContent = (125 + Math.random() * 10 - 5).toFixed(1);
+        document.getElementById('power_factor').textContent = (0.97 + Math.random() * 0.04 - 0.02).toFixed(2);
+        document.getElementById('load_percentage').textContent = (78 + Math.random() * 10 - 5).toFixed(1);
+        document.getElementById('oil_temperature').textContent = (85 + Math.random() * 6 - 3).toFixed(0);
+        
+        // Occasionally generate alerts
+        if (Math.random() < 0.05) {
+          generateAlert();
+        }
+      }, 2000);
+    }
+
+    function generateAlert() {
+      const alerts = [
+        { type: 'warning', message: '220kV Transformer T1: Oil temperature above 90°C' },
+        { type: 'info', message: '220kV Circuit Breaker CB1: Scheduled maintenance in 7 days' },
+        { type: 'warning', message: '220kV Busbar: Voltage deviation +2.5% detected' },
+        { type: 'info', message: '220kV System: Load balancing optimization completed' },
+        { type: 'warning', message: '220kV Line: Power factor below 0.95 detected' },
+        { type: 'info', message: 'Protection System: IEC 61850 communication normal' },
+        { type: 'warning', message: '220kV CT1: Current imbalance detected' },
+        { type: 'info', message: 'SCADA System: Data acquisition rate optimal' }
+      ];
+      
+      const alert = alerts[Math.floor(Math.random() * alerts.length)];
+      const alertsList = document.getElementById('alertsList');
+      
+      const alertElement = document.createElement('div');
+      alertElement.style.cssText = `
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-size: 11px;
+        background: ${alert.type === 'warning' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(0, 255, 136, 0.2)'};
+        border-left: 3px solid ${alert.type === 'warning' ? '#ff6b6b' : '#00ff88'};
+      `;
+      alertElement.textContent = alert.message;
+      
+      alertsList.appendChild(alertElement);
+      
+      // Remove old alerts
+      if (alertsList.children.length > 3) {
+        alertsList.removeChild(alertsList.firstChild);
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+    }
+
+    // 220kV Operations Functions
+    function performLoadFlowAnalysis() {
+      const alertsList = document.getElementById('alertsList');
+      const alertElement = document.createElement('div');
+      alertElement.style.cssText = `
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-size: 11px;
+        background: rgba(0, 255, 136, 0.2);
+        border-left: 3px solid #00ff88;
+      `;
+      alertElement.textContent = 'Load Flow Analysis: All buses within voltage limits. Power flow stable.';
+      alertsList.appendChild(alertElement);
+      
+      // Highlight the button temporarily
+      document.getElementById('loadFlow').classList.add('active');
+      setTimeout(() => {
+        document.getElementById('loadFlow').classList.remove('active');
+      }, 2000);
+    }
+
+    function performFaultAnalysis() {
+      const alertsList = document.getElementById('alertsList');
+      const alertElement = document.createElement('div');
+      alertElement.style.cssText = `
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-size: 11px;
+        background: rgba(255, 193, 7, 0.2);
+        border-left: 3px solid #ffc107;
+      `;
+      alertElement.textContent = 'Fault Analysis: System protection coordination verified. No critical faults detected.';
+      alertsList.appendChild(alertElement);
+      
+      document.getElementById('faultAnalysis').classList.add('active');
+      setTimeout(() => {
+        document.getElementById('faultAnalysis').classList.remove('active');
+      }, 2000);
+    }
+
+    function performProtectionTest() {
+      const alertsList = document.getElementById('alertsList');
+      const alertElement = document.createElement('div');
+      alertElement.style.cssText = `
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-size: 11px;
+        background: rgba(0, 255, 136, 0.2);
+        border-left: 3px solid #00ff88;
+      `;
+      alertElement.textContent = 'Protection Test: All protection relays responding correctly. IEC 61850 GOOSE messages OK.';
+      alertsList.appendChild(alertElement);
+      
+      document.getElementById('protectionTest').classList.add('active');
+      setTimeout(() => {
+        document.getElementById('protectionTest').classList.remove('active');
+      }, 2000);
+    }
+
+    let maintenanceMode = false;
+    function toggleMaintenanceMode() {
+      maintenanceMode = !maintenanceMode;
+      const button = document.getElementById('maintenanceMode');
+      
+      if (maintenanceMode) {
+        button.classList.add('active');
+        button.textContent = 'Exit Maintenance';
+        
+        // Simulate maintenance mode effects
+        document.getElementById('power').textContent = '0.0';
+        document.getElementById('current').textContent = '0.0';
+        
+        const alertsList = document.getElementById('alertsList');
+        const alertElement = document.createElement('div');
+        alertElement.style.cssText = `
+          padding: 8px;
+          margin: 5px 0;
+          border-radius: 5px;
+          font-size: 11px;
+          background: rgba(255, 107, 107, 0.2);
+          border-left: 3px solid #ff6b6b;
+        `;
+        alertElement.textContent = 'MAINTENANCE MODE: 220kV System isolated. All circuits de-energized.';
+        alertsList.appendChild(alertElement);
+      } else {
+        button.classList.remove('active');
+        button.textContent = 'Maintenance Mode';
+        
+        const alertsList = document.getElementById('alertsList');
+        const alertElement = document.createElement('div');
+        alertElement.style.cssText = `
+          padding: 8px;
+          margin: 5px 0;
+          border-radius: 5px;
+          font-size: 11px;
+          background: rgba(0, 255, 136, 0.2);
+          border-left: 3px solid #00ff88;
+        `;
+        alertElement.textContent = 'OPERATIONAL MODE: 220kV System re-energized. Normal operation resumed.';
+        alertsList.appendChild(alertElement);
+      }
+    }
+
+    // Equipment Data Management
+    function createEquipmentFromObject(object) {
+      const equipment = {
+        object: object,
+        name: object.name || 'Unknown Equipment',
+        type: getEquipmentType(object.name),
+        status: 'operational',
+        id: object.uuid
+      };
+      
+      // Generate realistic data for this equipment
+      equipmentData.set(equipment.id, generateEquipmentData(equipment));
+      
+      return equipment;
+    }
+
+    function generateEquipmentData(equipment) {
+      const baseData = {
+        voltage: 220 + Math.random() * 4 - 2,
+        current: 1250 + Math.random() * 200 - 100,
+        temperature: 65 + Math.random() * 10 - 5,
+        power: 475 + Math.random() * 20 - 10,
+        efficiency: 99.1 + Math.random() * 0.8 - 0.4,
+        load: 78 + Math.random() * 15 - 7.5,
+        lastUpdate: new Date()
+      };
+
+      // Customize data based on equipment type
+      if (equipment.type.includes('Transformer')) {
+        baseData.oilTemperature = 85 + Math.random() * 10 - 5;
+        baseData.tapPosition = Math.floor(Math.random() * 21) + 1;
+        baseData.insulationResistance = 1000 + Math.random() * 500;
+      } else if (equipment.type.includes('Breaker')) {
+        baseData.operationCount = Math.floor(Math.random() * 1000) + 500;
+        baseData.contactResistance = 0.1 + Math.random() * 0.05;
+        baseData.sf6Pressure = 6.5 + Math.random() * 0.5 - 0.25;
+      } else if (equipment.type.includes('Switch')) {
+        baseData.position = Math.random() > 0.5 ? 'Open' : 'Closed';
+        baseData.operationTime = 50 + Math.random() * 20;
+      }
+
+      return baseData;
+    }
+
+    function updateEquipmentData() {
+      // Update all equipment data with realistic variations
+      equipmentData.forEach((data, id) => {
+        data.voltage += (Math.random() - 0.5) * 0.5;
+        data.current += (Math.random() - 0.5) * 10;
+        data.temperature += (Math.random() - 0.5) * 1;
+        data.power = (data.voltage * data.current * Math.sqrt(3)) / 1000; // P = √3 * V * I / 1000
+        data.load += (Math.random() - 0.5) * 2;
+        data.lastUpdate = new Date();
+        
+        // Keep values within realistic ranges
+        data.voltage = Math.max(210, Math.min(230, data.voltage));
+        data.current = Math.max(1000, Math.min(1500, data.current));
+        data.temperature = Math.max(55, Math.min(85, data.temperature));
+        data.load = Math.max(60, Math.min(95, data.load));
+      });
+    }
+
+    function isEquipmentObject(object) {
+      if (!object.name) return false;
+      const name = object.name.toLowerCase();
+      return name.includes('transformer') || 
+             name.includes('switch') || 
+             name.includes('breaker') ||
+             name.includes('busbar') ||
+             name.includes('ct') ||
+             name.includes('vt') ||
+             name.includes('arrester') ||
+             name.includes('isolator');
+    }
+
+    function showDataOverlay(equipment, x, y) {
+      if (!dataOverlay) return;
+      
+      const data = equipmentData.get(equipment.id) || generateEquipmentData(equipment);
+      
+      // Update overlay content
+      document.getElementById('overlayTitle').textContent = equipment.name || equipment.type;
+      
+      const overlayData = document.getElementById('overlayData');
+      overlayData.innerHTML = `
+        <div class="overlay-item">
+          <span class="overlay-label">Voltage:</span>
+          <span class="overlay-value ${data.voltage > 225 || data.voltage < 215 ? 'warning' : 'good'}">${data.voltage.toFixed(1)} kV</span>
+        </div>
+        <div class="overlay-item">
+          <span class="overlay-label">Current:</span>
+          <span class="overlay-value ${data.current > 1400 ? 'warning' : 'good'}">${data.current.toFixed(0)} A</span>
+        </div>
+        <div class="overlay-item">
+          <span class="overlay-label">Temperature:</span>
+          <span class="overlay-value ${data.temperature > 75 ? 'warning' : 'good'}">${data.temperature.toFixed(1)}°C</span>
+        </div>
+        <div class="overlay-item">
+          <span class="overlay-label">Load:</span>
+          <span class="overlay-value ${data.load > 90 ? 'warning' : 'good'}">${data.load.toFixed(1)}%</span>
+        </div>
+        <div class="overlay-item">
+          <span class="overlay-label">Power:</span>
+          <span class="overlay-value">${data.power.toFixed(1)} MW</span>
+        </div>
+        <div class="overlay-item">
+          <span class="overlay-label">Efficiency:</span>
+          <span class="overlay-value ${data.efficiency < 98 ? 'warning' : 'good'}">${data.efficiency.toFixed(1)}%</span>
+        </div>
+      `;
+      
+      // Add equipment-specific data
+      if (data.oilTemperature) {
+        overlayData.innerHTML += `
+          <div class="overlay-item">
+            <span class="overlay-label">Oil Temp:</span>
+            <span class="overlay-value ${data.oilTemperature > 90 ? 'warning' : 'good'}">${data.oilTemperature.toFixed(1)}°C</span>
+          </div>
+          <div class="overlay-item">
+            <span class="overlay-label">Tap Position:</span>
+            <span class="overlay-value">${data.tapPosition}/21</span>
+          </div>
+        `;
+      }
+      
+      if (data.sf6Pressure) {
+        overlayData.innerHTML += `
+          <div class="overlay-item">
+            <span class="overlay-label">SF6 Pressure:</span>
+            <span class="overlay-value ${data.sf6Pressure < 6.0 ? 'warning' : 'good'}">${data.sf6Pressure.toFixed(1)} bar</span>
+          </div>
+        `;
+      }
+      
+      if (data.position) {
+        overlayData.innerHTML += `
+          <div class="overlay-item">
+            <span class="overlay-label">Position:</span>
+            <span class="overlay-value">${data.position}</span>
+          </div>
+        `;
+      }
+      
+      // Update status
+      const hasWarnings = data.voltage > 225 || data.voltage < 215 || 
+                         data.current > 1400 || data.temperature > 75 || 
+                         data.load > 90 || data.efficiency < 98;
+      
+      const statusDot = document.getElementById('overlayStatusDot');
+      const statusText = document.getElementById('overlayStatus');
+      
+      if (hasWarnings) {
+        statusDot.className = 'status-dot warning';
+        statusText.textContent = 'Warning - Check Parameters';
+        statusText.style.color = '#ff6b6b';
+      } else {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Operational - All Normal';
+        statusText.style.color = '#00ff88';
+      }
+      
+      // Position overlay near click point
+      dataOverlay.style.left = Math.min(x, window.innerWidth - 280) + 'px';
+      dataOverlay.style.top = Math.max(y - 200, 80) + 'px';
+      
+      // Show overlay
+      dataOverlay.classList.add('visible');
+    }
+
+    function hideDataOverlay() {
+      if (dataOverlay) {
+        dataOverlay.classList.remove('visible');
+      }
+    }
+
+    function showQuickPreview(object, x, y) {
+      // Quick preview functionality can be added here
+      // For now, we'll just change the cursor
+    }
+
+    function highlightEquipment(mesh) {
+      // Equipment highlighting is handled by the iframe viewer
+      console.log('Highlight equipment - handled by iframe viewer');
+    }
+
+    function clearHighlight() {
+      // Clear highlight is handled by the iframe viewer
+      console.log('Clear highlight - handled by iframe viewer');
+    }
+
+    // Animation loop is handled by the iframe viewer
+    // Data updates are handled by setInterval in startDataSimulation()
+
+    // Initialize default environment
+    setTimeout(() => {
+      setEnvironment('day');
+    }, 1000);
+  </script>
+</body>
+</html>

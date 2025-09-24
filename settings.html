@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Digital Twin Substation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            border-right: 2px solid #00ff88;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h2 {
+            color: #00ff88;
+            font-size: 1.2rem;
+            line-height: 1.3;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-item.active .nav-link {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border-left: 3px solid #00ff88;
+        }
+
+        .nav-icon {
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .nav-text {
+            font-size: 0.95rem;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .header h1 {
+            color: #00ff88;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .settings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        .settings-section {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .settings-section h3 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .setting-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .setting-description {
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00ff88;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .range-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+        }
+
+        .range-slider::-moz-range-thumb {
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+            border: none;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: rgba(0, 255, 136, 0.1);
+            border-left-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .alert-warning {
+            background: rgba(255, 165, 0, 0.1);
+            border-left-color: #ffa500;
+            color: #ffa500;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .profile-info h4 {
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
+
+        .profile-info p {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Digital Twin<br>Substation</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" data-page="home">
+                        <span class="nav-icon"><i class="fas fa-home"></i></span>
+                        <span class="nav-text">Home</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="realtime.html" class="nav-link" data-page="realtime">
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                        <span class="nav-text">Real-Time Data</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="equipment.html" class="nav-link" data-page="equipment">
+                        <span class="nav-icon"><i class="fas fa-heartbeat"></i></span>
+                        <span class="nav-text">Equipment Health</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="fault.html" class="nav-link" data-page="fault">
+                        <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                        <span class="nav-text">Fault Simulation</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link" data-page="reports">
+                        <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
+                        <span class="nav-text">Reports</span>
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a href="settings.html" class="nav-link" data-page="settings">
+                        <span class="nav-icon"><i class="fas fa-cog"></i></span>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 20px;">
+                    <a href="#" class="nav-link" onclick="logout()" data-page="logout">
+                        <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span>
+                        <span class="nav-text">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+        <h1><i class="fas fa-cog"></i> System Settings</h1>
+        <p>Configure and customize your Digital Twin Substation system</p>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <div class="settings-container">
+        <!-- User Profile Section -->
+        <div class="settings-section">
+            <h3><i class="fas fa-user"></i> User Profile</h3>
+            
+            <div class="user-profile">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-info">
+                    <h4>System Administrator</h4>
+                    <p>admin@digitaltwins.com</p>
+                    <p>Last login: Dec 19, 2024 14:30</p>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Full Name</label>
+                <input type="text" class="setting-input" value="System Administrator" id="fullName">
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Email Address</label>
+                <input type="email" class="setting-input" value="admin@digitaltwins.com" id="email">
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Change Password</label>
+                <input type="password" class="setting-input" placeholder="Enter new password" id="password">
+            </div>
+
+            <button class="btn" onclick="saveProfile()">
+                <i class="fas fa-save"></i> Save Profile
+            </button>
+        </div>
+
+        <!-- System Configuration -->
+        <div class="settings-section">
+            <h3><i class="fas fa-server"></i> System Configuration</h3>
+
+            <div class="setting-item">
+                <label class="setting-label">Data Refresh Rate</label>
+                <div class="setting-description">How often real-time data is updated (seconds)</div>
+                <input type="range" class="range-slider" min="1" max="10" value="2" id="refreshRate" oninput="updateRangeValue('refreshRate', 'refreshValue')">
+                <span class="range-value" id="refreshValue">2s</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Auto-Save Interval</label>
+                <div class="setting-description">Automatic configuration backup interval (minutes)</div>
+                <input type="range" class="range-slider" min="5" max="60" value="15" id="autoSave" oninput="updateRangeValue('autoSave', 'autoSaveValue')">
+                <span class="range-value" id="autoSaveValue">15min</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Enable Debug Mode</label>
+                <div class="setting-description">Show detailed system logs and debug information</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="debugMode">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Database Connection</label>
+                <input type="text" class="setting-input" value="postgresql://localhost:5432/substation_db" id="dbConnection">
+            </div>
+
+            <button class="btn" onclick="saveSystemConfig()">
+                <i class="fas fa-save"></i> Save Configuration
+            </button>
+        </div>
+
+        <!-- Monitoring Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-chart-line"></i> Monitoring Settings</h3>
+
+            <div class="setting-item">
+                <label class="setting-label">Alert Threshold - Voltage</label>
+                <div class="setting-description">Voltage deviation threshold for alerts (%)</div>
+                <input type="range" class="range-slider" min="1" max="10" value="5" id="voltageThreshold" oninput="updateRangeValue('voltageThreshold', 'voltageValue')">
+                <span class="range-value" id="voltageValue">5%</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Alert Threshold - Temperature</label>
+                <div class="setting-description">Temperature threshold for equipment alerts (°C)</div>
+                <input type="range" class="range-slider" min="60" max="100" value="80" id="tempThreshold" oninput="updateRangeValue('tempThreshold', 'tempValue')">
+                <span class="range-value" id="tempValue">80°C</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Enable Email Alerts</label>
+                <div class="setting-description">Send email notifications for critical alerts</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="emailAlerts" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Enable SMS Alerts</label>
+                <div class="setting-description">Send SMS notifications for emergency situations</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="smsAlerts">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Alert Email Recipients</label>
+                <input type="text" class="setting-input" value="ops@company.com, maintenance@company.com" id="alertEmails">
+            </div>
+
+            <button class="btn" onclick="saveMonitoringSettings()">
+                <i class="fas fa-save"></i> Save Monitoring Settings
+            </button>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
+
+            <div class="setting-item">
+                <label class="setting-label">Session Timeout</label>
+                <div class="setting-description">Automatic logout after inactivity (minutes)</div>
+                <input type="range" class="range-slider" min="15" max="120" value="30" id="sessionTimeout" oninput="updateRangeValue('sessionTimeout', 'sessionValue')">
+                <span class="range-value" id="sessionValue">30min</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Enable Two-Factor Authentication</label>
+                <div class="setting-description">Require 2FA for all user logins</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="twoFactor">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Enable Audit Logging</label>
+                <div class="setting-description">Log all user actions and system changes</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auditLogging" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">IP Whitelist</label>
+                <div class="setting-description">Allowed IP addresses (comma-separated)</div>
+                <input type="text" class="setting-input" value="192.168.1.0/24, 10.0.0.0/8" id="ipWhitelist">
+            </div>
+
+            <button class="btn" onclick="saveSecuritySettings()">
+                <i class="fas fa-save"></i> Save Security Settings
+            </button>
+        </div>
+
+        <!-- Backup & Maintenance -->
+        <div class="settings-section">
+            <h3><i class="fas fa-database"></i> Backup & Maintenance</h3>
+
+            <div class="setting-item">
+                <label class="setting-label">Automatic Backup</label>
+                <div class="setting-description">Enable automatic daily backups</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoBackup" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Backup Retention</label>
+                <div class="setting-description">Number of backup copies to keep</div>
+                <input type="range" class="range-slider" min="7" max="30" value="14" id="backupRetention" oninput="updateRangeValue('backupRetention', 'retentionValue')">
+                <span class="range-value" id="retentionValue">14 days</span>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Last Backup</label>
+                <div class="setting-description">Dec 19, 2024 02:00 AM - Success</div>
+            </div>
+
+            <button class="btn" onclick="createBackup()">
+                <i class="fas fa-download"></i> Create Backup Now
+            </button>
+
+            <button class="btn" onclick="restoreBackup()">
+                <i class="fas fa-upload"></i> Restore from Backup
+            </button>
+
+            <button class="btn btn-danger" onclick="resetSystem()">
+                <i class="fas fa-exclamation-triangle"></i> Factory Reset
+            </button>
+        </div>
+
+        <!-- System Information -->
+        <div class="settings-section">
+            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+
+            <div class="setting-item">
+                <label class="setting-label">Software Version</label>
+                <div class="setting-description">Digital Twin Substation v2.1.3</div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">Database Version</label>
+                <div class="setting-description">PostgreSQL 14.2</div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">System Uptime</label>
+                <div class="setting-description">247 days, 14 hours, 32 minutes</div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">License</label>
+                <div class="setting-description">Enterprise License - Expires: Dec 31, 2025</div>
+            </div>
+
+            <button class="btn" onclick="checkUpdates()">
+                <i class="fas fa-sync"></i> Check for Updates
+            </button>
+
+            <button class="btn" onclick="downloadLogs()">
+                <i class="fas fa-file-download"></i> Download System Logs
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function updateRangeValue(sliderId, valueId) {
+            const slider = document.getElementById(sliderId);
+            const valueSpan = document.getElementById(valueId);
+            let value = slider.value;
+            
+            switch(sliderId) {
+                case 'refreshRate':
+                    valueSpan.textContent = value + 's';
+                    break;
+                case 'autoSave':
+                    valueSpan.textContent = value + 'min';
+                    break;
+                case 'voltageThreshold':
+                    valueSpan.textContent = value + '%';
+                    break;
+                case 'tempThreshold':
+                    valueSpan.textContent = value + '°C';
+                    break;
+                case 'sessionTimeout':
+                    valueSpan.textContent = value + 'min';
+                    break;
+                case 'backupRetention':
+                    valueSpan.textContent = value + ' days';
+                    break;
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+
+        function saveProfile() {
+            showAlert('Profile settings saved successfully!');
+        }
+
+        function saveSystemConfig() {
+            showAlert('System configuration saved successfully!');
+        }
+
+        function saveMonitoringSettings() {
+            showAlert('Monitoring settings saved successfully!');
+        }
+
+        function saveSecuritySettings() {
+            showAlert('Security settings saved successfully!');
+        }
+
+        function createBackup() {
+            showAlert('Backup created successfully!');
+        }
+
+        function restoreBackup() {
+            if (confirm('Are you sure you want to restore from backup? This will overwrite current settings.')) {
+                showAlert('System restored from backup successfully!');
+            }
+        }
+
+        function resetSystem() {
+            if (confirm('WARNING: This will reset all settings to factory defaults. Are you sure?')) {
+                if (confirm('This action cannot be undone. Continue?')) {
+                    showAlert('System reset to factory defaults!', 'warning');
+                }
+            }
+        }
+
+        function checkUpdates() {
+            showAlert('System is up to date. No updates available.');
+        }
+
+        function downloadLogs() {
+            showAlert('System logs downloaded successfully!');
+        }
+
+        // Initialize range values on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateRangeValue('refreshRate', 'refreshValue');
+            updateRangeValue('autoSave', 'autoSaveValue');
+            updateRangeValue('voltageThreshold', 'voltageValue');
+            updateRangeValue('tempThreshold', 'tempValue');
+            updateRangeValue('sessionTimeout', 'sessionValue');
+            updateRangeValue('backupRetention', 'retentionValue');
+        });
+    </script>
+    <script src="auth.js"></script>
+        </main>
+    </div>
+</body>
+</html>

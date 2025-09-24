@@ -1,0 +1,11 @@
+Model Information:
+* title:	Power Transformer Electrical Substation
+* source:	https://sketchfab.com/3d-models/power-transformer-electrical-substation-3148acbe83a14abd8c3bf5c3b4b3f57a
+* author:	Air Digital Photogrammetry (https://sketchfab.com/AirDigitalca)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Power Transformer Electrical Substation" (https://sketchfab.com/3d-models/power-transformer-electrical-substation-3148acbe83a14abd8c3bf5c3b4b3f57a) by Air Digital Photogrammetry (https://sketchfab.com/AirDigitalca) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
